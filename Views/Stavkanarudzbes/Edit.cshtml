@@ -1,0 +1,52 @@
+﻿@model SUPK.Models.Stavkanarudzbe
+
+@{
+    ViewData["Title"] = "Uredi stavku narudžbe";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <h1 class="h3 mb-0 text-gray-800">Uredi stavku narudžbe</h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Podaci o stavci</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="StavkaId" />
+
+                    <div class="form-group mb-3">
+                        <label asp-for="Kolicina" class="control-label fw-bold">Količina</label>
+                        <input asp-for="Kolicina" class="form-control" />
+                        <span asp-validation-for="Kolicina" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="NarudzbaId" class="control-label fw-bold">Narudžba</label>
+                        <select asp-for="NarudzbaId" class="form-select" asp-items="ViewBag.NarudzbaId"></select>
+                        <span asp-validation-for="NarudzbaId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label asp-for="ProizvodId" class="control-label fw-bold">Proizvod</label>
+                        <select asp-for="ProizvodId" class="form-select" asp-items="ViewBag.ProizvodId"></select>
+                        <span asp-validation-for="ProizvodId" class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mt-4">
+                        <input type="submit" value="Spremi promjene" class="btn btn-primary" />
+                        <a asp-action="Index" class="btn btn-secondary ms-2">Natrag na listu</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

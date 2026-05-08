@@ -1,0 +1,46 @@
+﻿@model SUPK.Models.Proizvod
+
+@{
+    ViewData["Title"] = "Uredi proizvod";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <h1 class="h3 mb-0 text-gray-800">Uredi proizvod</h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Podaci o proizvodu</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <form asp-action="Edit">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <input type="hidden" asp-for="ProizvodId" />
+                    
+                    <div class="form-group mb-3">
+                        <label asp-for="Naziv" class="control-label fw-bold">Naziv</label>
+                        <input asp-for="Naziv" class="form-control" />
+                        <span asp-validation-for="Naziv" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label asp-for="Cijena" class="control-label fw-bold">Cijena</label>
+                        <input asp-for="Cijena" class="form-control" />
+                        <span asp-validation-for="Cijena" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="form-group mt-4">
+                        <input type="submit" value="Spremi promjene" class="btn btn-primary" />
+                        <a asp-action="Index" class="btn btn-secondary ms-2">Natrag na listu</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
