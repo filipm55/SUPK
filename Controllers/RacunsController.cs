@@ -249,12 +249,12 @@ namespace SUPK.Controllers
 
             if (vm.Racun.VrijemeZatvaranja.HasValue && !vm.Racun.NacinPlacanja.HasValue)
             {
-                ModelState.AddModelError("Racun.NacinPlacanja", "Ako je upisano vrijeme zatvaranja, morate odabrati način plaćanja.");
+                ModelState.AddModelError("Racun.NacinPlacanja", "Račun mora sadržavati način plaćanja.");
             }
 
             if (vm.Racun.NacinPlacanja.HasValue && !vm.Racun.VrijemeZatvaranja.HasValue)
             {
-                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Ako je odabran način plaćanja, morate upisati i vrijeme zatvaranja.");
+                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Račun mora sadržavati vrijeme zatvaranja.");
             }
 
             vm.Stavke ??= new();
