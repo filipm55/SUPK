@@ -135,22 +135,6 @@
     </div>
 </div>
 
-<!-- Rezime -->
-<div class="card shadow">
-    <div class="card-body bg-light">
-        <div class="row">
-            <div class="col-md-6"></div>
-            <div class="col-md-6">
-                <h5 class="mb-3">REZIME RAČUNA</h5>
-                <dl class="row">
-                    <dt class="col-sm-6 text-end">Ukupna cijena:</dt>
-                    <dd class="col-sm-6 fw-bold text-danger" style="font-size: 1.25rem;">@ukupnaCijena.ToString("F2") €</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-</div>
-
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

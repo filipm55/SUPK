@@ -176,13 +176,20 @@ namespace SUPK.Controllers
                 return NotFound();
             }
 
-            var racun = await _context.Racuns.FindAsync(id);
+            var racun = await _context.Racuns
+                .Include(r => r.Narudzbas)
+                    .ThenInclude(n => n.Stavkanarudzbes)
+                .FirstOrDefaultAsync(r => r.RacunId == id);
             if (racun == null)
             {
                 return NotFound();
             }
             ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", racun.KonobarId);
             ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", racun.StolId);
+            ViewData["Proizvodi"] = new SelectList(
+                await _context.Proizvods.ToListAsync(),
+                "ProizvodId",
+                "Naziv");
 
             ViewData["NacinPlacanja"] = new SelectList(
                 Enum.GetValues(typeof(TipPlacanja))
@@ -192,7 +199,26 @@ namespace SUPK.Controllers
                 "Text",
                 racun.NacinPlacanja);
 
-            return View(racun);
+            var vm = new RacunEditViewModel
+            {
+                Racun = racun,
+                Stavke = racun.Narudzbas
+                    .SelectMany(n => n.Stavkanarudzbes)
+                    .Select(s => new StavkaEditViewModel
+                    {
+                        StavkaId = s.StavkaId,
+                        ProizvodId = s.ProizvodId,
+                        Kolicina = s.Kolicina
+                    })
+                    .ToList()
+            };
+
+            if (!vm.Stavke.Any())
+            {
+                vm.Stavke.Add(new StavkaEditViewModel());
+            }
+
+            return View(vm);
         }
 
         // POST: Racuns/Edit/5
@@ -200,46 +226,145 @@ namespace SUPK.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("RacunId,VrijemeOtvaranja,VrijemeZatvaranja,NacinPlacanja,StolId,KonobarId")] Racun racun)
+        public async Task<IActionResult> Edit(int id, RacunEditViewModel vm)
         {
-            if (id != racun.RacunId)
+            if (id != vm.Racun.RacunId)
+            {
+                return NotFound();
+            }
+
+            var racunFromDb = await _context.Racuns
+                .Include(r => r.Narudzbas)
+                    .ThenInclude(n => n.Stavkanarudzbes)
+                .FirstOrDefaultAsync(r => r.RacunId == id);
+            if (racunFromDb == null)
             {
                 return NotFound();
             }
 
             // Očistite navigacijska svojstva iz ModelState validacije
-            ModelState.Remove("Konobar");
-            ModelState.Remove("Stol");
-            ModelState.Remove("Narudzbas");
+            ModelState.Remove("Racun.Konobar");
+            ModelState.Remove("Racun.Stol");
+            ModelState.Remove("Racun.Narudzbas");
 
-            if (racun.VrijemeZatvaranja.HasValue && !racun.NacinPlacanja.HasValue)
+            if (vm.Racun.VrijemeZatvaranja.HasValue && !vm.Racun.NacinPlacanja.HasValue)
             {
-                ModelState.AddModelError("NacinPlacanja", "Račun mora sadržavati način plaćanja.");
+                ModelState.AddModelError("Racun.NacinPlacanja", "Ako je upisano vrijeme zatvaranja, morate odabrati način plaćanja.");
             }
+
+            if (vm.Racun.NacinPlacanja.HasValue && !vm.Racun.VrijemeZatvaranja.HasValue)
+            {
+                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Ako je odabran način plaćanja, morate upisati i vrijeme zatvaranja.");
+            }
+
+            vm.Stavke ??= new();
 
             if (ModelState.IsValid)
             {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
                 try
                 {
-                    _context.Update(racun);
+                    racunFromDb.VrijemeOtvaranja = vm.Racun.VrijemeOtvaranja;
+                    racunFromDb.VrijemeZatvaranja = vm.Racun.VrijemeZatvaranja;
+                    racunFromDb.NacinPlacanja = vm.Racun.NacinPlacanja;
+                    racunFromDb.StolId = vm.Racun.StolId;
+                    racunFromDb.KonobarId = vm.Racun.KonobarId;
+
+                    var narudzba = racunFromDb.Narudzbas.OrderByDescending(n => n.NarudzbaId).FirstOrDefault();
+                    if (narudzba == null)
+                    {
+                        narudzba = new Narudzba
+                        {
+                            VrijemeNarudzbe = DateTime.Now,
+                            RacunId = racunFromDb.RacunId
+                        };
+                        _context.Narudzbas.Add(narudzba);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    var validStavke = vm.Stavke
+                        .Where(s => s.ProizvodId.HasValue && s.Kolicina.HasValue && s.Kolicina.Value > 0)
+                        .ToList();
+
+                    if (!validStavke.Any())
+                    {
+                        ModelState.AddModelError("", "Račun mora imati barem jednu valjanu stavku.");
+                        throw new InvalidOperationException("No valid items");
+                    }
+
+                    var postedIds = validStavke
+                        .Where(s => s.StavkaId.HasValue)
+                        .Select(s => s.StavkaId!.Value)
+                        .ToHashSet();
+
+                    var toRemove = narudzba.Stavkanarudzbes
+                        .Where(s => !postedIds.Contains(s.StavkaId))
+                        .ToList();
+
+                    if (toRemove.Count > 0)
+                    {
+                        _context.Stavkanarudzbes.RemoveRange(toRemove);
+                    }
+
+                    foreach (var stavkaVm in validStavke)
+                    {
+                        if (stavkaVm.StavkaId.HasValue)
+                        {
+                            var existing = narudzba.Stavkanarudzbes.FirstOrDefault(s => s.StavkaId == stavkaVm.StavkaId.Value);
+                            if (existing != null)
+                            {
+                                existing.ProizvodId = stavkaVm.ProizvodId!.Value;
+                                existing.Kolicina = stavkaVm.Kolicina!.Value;
+                                continue;
+                            }
+                        }
+
+                        _context.Stavkanarudzbes.Add(new Stavkanarudzbe
+                        {
+                            NarudzbaId = narudzba.NarudzbaId,
+                            ProizvodId = stavkaVm.ProizvodId!.Value,
+                            Kolicina = stavkaVm.Kolicina!.Value
+                        });
+                    }
+
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!RacunExists(racun.RacunId))
+                    await transaction.RollbackAsync();
+
+                    if (!RacunExists(vm.Racun.RacunId))
                     {
                         return NotFound();
                     }
-                    else
-                    {
-                        throw;
-                    }
+
+                    throw;
                 }
-                return RedirectToAction(nameof(Index));
+                catch
+                {
+                    await transaction.RollbackAsync();
+                }
             }
-            ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", racun.KonobarId);
-            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", racun.StolId);
-            return View(racun);
+            ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", vm.Racun.KonobarId);
+            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", vm.Racun.StolId);
+            ViewData["Proizvodi"] = new SelectList(
+                await _context.Proizvods.ToListAsync(),
+                "ProizvodId",
+                "Naziv");
+
+            ViewData["NacinPlacanja"] = new SelectList(
+                Enum.GetValues(typeof(TipPlacanja))
+                    .Cast<TipPlacanja>()
+                    .Select(e => new { Value = e, Text = e.ToString() }),
+                "Value",
+                "Text",
+                vm.Racun.NacinPlacanja);
+
+            return View(vm);
         }
 
         // GET: Racuns/Delete/5

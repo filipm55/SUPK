@@ -1,11 +1,11 @@
-﻿@model SUPK.Models.Racun
+﻿@model SUPK.ViewModels.RacunEditViewModel
 
 @{
     ViewData["Title"] = "Uredi račun";
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
-    <h1 class="h3 mb-0 text-gray-800">Uredi račun #@Model.RacunId</h1>
+    <h1 class="h3 mb-0 text-gray-800">Uredi račun #@Model.Racun.RacunId</h1>
 </div>
 
 <div class="card shadow mb-4">
@@ -15,46 +15,90 @@
     <div class="card-body">
         <form asp-action="Edit">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
-            <input type="hidden" asp-for="RacunId" />
+            <input type="hidden" asp-for="Racun.RacunId" />
 
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label asp-for="VrijemeOtvaranja" class="form-label fw-bold">Vrijeme otvaranja</label>
-                    <input asp-for="VrijemeOtvaranja" class="form-control" type="datetime-local" />
-                    <span asp-validation-for="VrijemeOtvaranja" class="text-danger"></span>
+                    <label asp-for="Racun.VrijemeOtvaranja" class="form-label fw-bold">Vrijeme otvaranja</label>
+                    <input asp-for="Racun.VrijemeOtvaranja" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="Racun.VrijemeOtvaranja" class="text-danger"></span>
                 </div>
 
                 <div class="col-md-6 mb-3">
-                    <label asp-for="VrijemeZatvaranja" class="form-label fw-bold">Vrijeme zatvaranja</label>
-                    <input asp-for="VrijemeZatvaranja" class="form-control" type="datetime-local" />
-                    <span asp-validation-for="VrijemeZatvaranja" class="text-danger small"></span>
+                    <label asp-for="Racun.VrijemeZatvaranja" class="form-label fw-bold">Vrijeme zatvaranja</label>
+                    <input asp-for="Racun.VrijemeZatvaranja" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="Racun.VrijemeZatvaranja" class="text-danger small"></span>
                     <div class="form-text">Ostavite prazno ako račun još nije zatvoren.</div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-4 mb-3">
-                    <label asp-for="StolId" class="form-label fw-bold">Stol</label>
-                    <select asp-for="StolId" class="form-select" asp-items="ViewBag.StolId"></select>
-                    <span asp-validation-for="StolId" class="text-danger"></span>
+                    <label asp-for="Racun.StolId" class="form-label fw-bold">Stol</label>
+                    <select asp-for="Racun.StolId" class="form-select" asp-items="ViewBag.StolId"></select>
+                    <span asp-validation-for="Racun.StolId" class="text-danger"></span>
                 </div>
 
                 <div class="col-md-4 mb-3">
-                    <label asp-for="KonobarId" class="form-label fw-bold">Konobar</label>
-                    <select asp-for="KonobarId" class="form-select" asp-items="ViewBag.KonobarId"></select>
-                    <span asp-validation-for="KonobarId" class="text-danger"></span>
+                    <label asp-for="Racun.KonobarId" class="form-label fw-bold">Konobar</label>
+                    <select asp-for="Racun.KonobarId" class="form-select" asp-items="ViewBag.KonobarId"></select>
+                    <span asp-validation-for="Racun.KonobarId" class="text-danger"></span>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <label asp-for="NacinPlacanja" class="form-label">Način plaćanja</label>
-                    <select asp-for="NacinPlacanja" 
+                    <label asp-for="Racun.NacinPlacanja" class="form-label">Način plaćanja</label>
+                    <select asp-for="Racun.NacinPlacanja" 
                             asp-items="ViewBag.NacinPlacanja" 
                             class="form-select">
                         <option value="">-- Odaberite način plaćanja --</option>
                     </select>
-                    <span asp-validation-for="NacinPlacanja"
+                    <span asp-validation-for="Racun.NacinPlacanja"
                           class="text-danger"></span>
                 </div>
             </div>
+
+            <hr />
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="m-0 font-weight-bold text-primary">Stavke računa</h6>
+                <button type="button" id="dodajStavku" class="btn btn-sm btn-outline-success">
+                    + Dodaj stavku
+                </button>
+            </div>
+
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Proizvod</th>
+                        <th>Količina</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="stavkeContainer">
+                    @for (int i = 0; i < Model.Stavke.Count; i++)
+                    {
+                        <tr class="stavka-red">
+                            <td>
+                                <input type="hidden" asp-for="Stavke[@i].StavkaId" name="Stavke[@i].StavkaId" />
+                                <select asp-for="Stavke[@i].ProizvodId"
+                                        asp-items="ViewBag.Proizvodi"
+                                        class="form-select proizvod-select" name="Stavke[@i].ProizvodId">
+                                    <option value="">-- Odaberite proizvod --</option>
+                                </select>
+                                <span asp-validation-for="Stavke[@i].ProizvodId" class="text-danger"></span>
+                            </td>
+                            <td>
+                                <input asp-for="Stavke[@i].Kolicina"
+                                       class="form-control" name="Stavke[@i].Kolicina"
+                                       type="number" min="1" />
+                                <span asp-validation-for="Stavke[@i].Kolicina" class="text-danger"></span>
+                            </td>
+                            <td class="text-center align-middle">
+                                <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
 
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary px-4">Spremi promjene</button>
@@ -66,4 +110,63 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        $(document).ready(function () {
+            var optionsHtml = $('.proizvod-select').first().html();
+
+            $("#dodajStavku").click(function () {
+                var currentIndex = $(".stavka-red").length;
+
+                var noviRed = `
+                    <tr class="stavka-red">
+                        <td>
+                            <input type="hidden" name="Stavke[${currentIndex}].StavkaId" value="" />
+                            <select class="form-select proizvod-select"
+                                    name="Stavke[${currentIndex}].ProizvodId"
+                                    id="Stavke_${currentIndex}__ProizvodId">
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number"
+                                   class="form-control"
+                                   name="Stavke[${currentIndex}].Kolicina"
+                                   id="Stavke_${currentIndex}__Kolicina"
+                                   value="1" min="1" />
+                        </td>
+                        <td class="text-center align-middle">
+                            <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
+                        </td>
+                    </tr>
+                `;
+
+                $("#stavkeContainer").append(noviRed);
+            });
+
+            $(document).on("click", ".obrisi-stavku", function () {
+                if ($(".stavka-red").length > 1) {
+                    $(this).closest("tr").remove();
+                    osvjeziIndekse();
+                } else {
+                    alert("Račun mora imati barem jednu stavku!");
+                }
+            });
+
+            function osvjeziIndekse() {
+                $(".stavka-red").each(function (index) {
+                    var hidden = $(this).find("input[type='hidden']");
+                    hidden.attr("name", `Stavke[${index}].StavkaId`);
+
+                    var select = $(this).find("select");
+                    select.attr("name", `Stavke[${index}].ProizvodId`);
+                    select.attr("id", `Stavke_${index}__ProizvodId`);
+
+                    var input = $(this).find("input[type='number']");
+                    input.attr("name", `Stavke[${index}].Kolicina`);
+                    input.attr("id", `Stavke_${index}__Kolicina`);
+                });
+            }
+        });
+    </script>
 }
