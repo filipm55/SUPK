@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SUPK.Models;
@@ -37,7 +33,11 @@ namespace SUPK.Controllers
             var racun = await _context.Racuns
                 .Include(r => r.Konobar)
                 .Include(r => r.Stol)
+                .Include(r => r.Narudzbas)
+                    .ThenInclude(n => n.Stavkanarudzbes)
+                        .ThenInclude(s => s.Proizvod)
                 .FirstOrDefaultAsync(m => m.RacunId == id);
+
             if (racun == null)
             {
                 return NotFound();
@@ -68,6 +68,13 @@ namespace SUPK.Controllers
                 "ProizvodId",
                 "Naziv");
 
+            ViewData["NacinPlacanja"] = new SelectList(
+                Enum.GetValues(typeof(TipPlacanja))
+                    .Cast<TipPlacanja>()
+                    .Select(e => new { Value = e, Text = e.ToString() }),
+                "Value",
+                "Text");
+
             var vm = new RacunCreateViewModel();
 
             var now = DateTime.Now;
@@ -95,7 +102,7 @@ namespace SUPK.Controllers
                 return View(vm);
             }
 
-            
+
             if (vm.Stavke == null || !vm.Stavke.Any())
             {
                 ModelState.AddModelError("", "Račun mora imati barem jednu stavku.");
@@ -135,7 +142,7 @@ namespace SUPK.Controllers
                 //Spremi stavke
                 foreach (var stavkaVm in vm.Stavke)
                 {
-                    if(stavkaVm.ProizvodId.HasValue && stavkaVm.Kolicina.HasValue) 
+                    if (stavkaVm.ProizvodId.HasValue && stavkaVm.Kolicina.HasValue)
                     {
                         var stavka = new Stavkanarudzbe
                         {
@@ -176,6 +183,15 @@ namespace SUPK.Controllers
             }
             ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", racun.KonobarId);
             ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", racun.StolId);
+
+            ViewData["NacinPlacanja"] = new SelectList(
+                Enum.GetValues(typeof(TipPlacanja))
+                    .Cast<TipPlacanja>()
+                    .Select(e => new { Value = e, Text = e.ToString() }),
+                "Value",
+                "Text",
+                racun.NacinPlacanja);
+
             return View(racun);
         }
 
@@ -184,7 +200,7 @@ namespace SUPK.Controllers
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("RacunId,VrijemeOtvaranja,VrijemeZatvaranja,NacinPlacanja, UkupnaCijena,StolId,KonobarId")] Racun racun)
+        public async Task<IActionResult> Edit(int id, [Bind("RacunId,VrijemeOtvaranja,VrijemeZatvaranja,NacinPlacanja,StolId,KonobarId")] Racun racun)
         {
             if (id != racun.RacunId)
             {
@@ -196,10 +212,10 @@ namespace SUPK.Controllers
             ModelState.Remove("Stol");
             ModelState.Remove("Narudzbas");
 
-            //if (racun.VrijemeZatvaranja.HasValue && !racun.NacinPlacanja.HasValue)
-            //{
-            //    ModelState.AddModelError("NacinPlacanja", "Račun mora sadržavati način plaćanja.");
-            //}
+            if (racun.VrijemeZatvaranja.HasValue && !racun.NacinPlacanja.HasValue)
+            {
+                ModelState.AddModelError("NacinPlacanja", "Račun mora sadržavati način plaćanja.");
+            }
 
             if (ModelState.IsValid)
             {

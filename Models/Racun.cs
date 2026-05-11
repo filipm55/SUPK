@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace SUPK.Models;
 
@@ -11,7 +9,7 @@ public partial class Racun
     public DateTime VrijemeOtvaranja { get; set; }
 
     public DateTime? VrijemeZatvaranja { get; set; }
-    public string? NacinPlacanja { get; set; } = null;
+    public TipPlacanja? NacinPlacanja { get; set; }
 
     public decimal? UkupnaCijena { get; set; }
 

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 
 namespace SUPK.Models;
 
@@ -31,13 +29,8 @@ public partial class CaffeBarDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder
-            .HasPostgresEnum("status_poziva", new[] { "CEKA", "RIJESENO" })
-            .HasPostgresEnum("stol_status", new[] { "SLOBODAN", "ZAUZET", "POZIV" })
-            .HasPostgresEnum("tip_poziva", new[] { "GRESKA", "NARUDZBA", "PLACANJE" })
-            .HasPostgresEnum("tip_placanja", new[] {"GOTOVINA", "KARTICA"});
-
-        //modelBuilder.HasPostgresEnum<TipPlacanja>("public", "tip_placanja");
+        // Enum types are now handled as integers by EF Core automatically
+        // No special PostgreSQL enum configuration needed
 
         modelBuilder.Entity<Konobar>(entity =>
         {
@@ -71,7 +64,7 @@ public partial class CaffeBarDbContext : DbContext
 
             entity.HasOne(d => d.Racun).WithMany(p => p.Narudzbas)
                 .HasForeignKey(d => d.RacunId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("narudzba_racun_id_fkey");
         });
 
@@ -90,7 +83,7 @@ public partial class CaffeBarDbContext : DbContext
 
             entity.HasOne(d => d.Stol).WithMany(p => p.Pozivkonobaras)
                 .HasForeignKey(d => d.StolId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("pozivkonobara_stol_id_fkey");
         });
 
@@ -128,19 +121,17 @@ public partial class CaffeBarDbContext : DbContext
             entity.Property(e => e.VrijemeZatvaranja)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("vrijeme_zatvaranja");
-
             entity.Property(e => e.NacinPlacanja)
-                .HasColumnName("nacin_placanja")
-                .HasColumnType("tip_placanja");
+                .HasColumnName("nacin_placanja");
 
             entity.HasOne(d => d.Konobar).WithMany(p => p.Racuns)
                 .HasForeignKey(d => d.KonobarId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("racun_konobar_id_fkey");
 
             entity.HasOne(d => d.Stol).WithMany(p => p.Racuns)
                 .HasForeignKey(d => d.StolId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("racun_stol_id_fkey");
         });
 
@@ -157,12 +148,12 @@ public partial class CaffeBarDbContext : DbContext
 
             entity.HasOne(d => d.Narudzba).WithMany(p => p.Stavkanarudzbes)
                 .HasForeignKey(d => d.NarudzbaId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Cascade)
                 .HasConstraintName("stavkanarudzbe_narudzba_id_fkey");
 
             entity.HasOne(d => d.Proizvod).WithMany(p => p.Stavkanarudzbes)
                 .HasForeignKey(d => d.ProizvodId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
+                .OnDelete(DeleteBehavior.Restrict)
                 .HasConstraintName("stavkanarudzbe_proizvod_id_fkey");
         });
 

@@ -46,23 +46,13 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <label asp-for="NacinPlacanja" class="form-label">Način plaćanja</label>
-                    @* <select asp-for="NacinPlacanja" class="form-select"
-                            asp-items="Html.GetEnumSelectList<SUPK.Models.TipPlacanja>()">
+                    <select asp-for="NacinPlacanja" 
+                            asp-items="ViewBag.NacinPlacanja" 
+                            class="form-select">
                         <option value="">-- Odaberite način plaćanja --</option>
-                    </select> *@
-                    <select asp-for="NacinPlacanja" class="form-select">
-                        <option value="">-- Odaberite način plaćanja --</option>
-                        <option value="GOTOVINA">Gotovina</option>
-                        <option value="KARTICA">Kartica</option>
                     </select>
                     <span asp-validation-for="NacinPlacanja"
                           class="text-danger"></span>
-                </div>
-
-                <div class="col-md-4 mb-3">
-                    <label asp-for="UkupnaCijena" class="form-label fw-bold">Ukupna cijena (€)</label>
-                    <input asp-for="UkupnaCijena" class="form-control" type="number" step="0.01" />
-                    <span asp-validation-for="UkupnaCijena" class="text-danger"></span>
                 </div>
             </div>
 

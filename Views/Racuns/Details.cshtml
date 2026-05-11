@@ -2,6 +2,20 @@
 
 @{
     ViewData["Title"] = "Detalji računa";
+    decimal ukupnaCijena = 0;
+    if (Model?.Narudzbas != null)
+    {
+        foreach (var narudzba in Model.Narudzbas)
+        {
+            if (narudzba?.Stavkanarudzbes != null)
+            {
+                foreach (var stavka in narudzba.Stavkanarudzbes)
+                {
+                    ukupnaCijena += (stavka.Proizvod?.Cijena ?? 0) * stavka.Kolicina;
+                }
+            }
+        }
+    }
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3 mt-3">
@@ -12,27 +26,132 @@
     </div>
 </div>
 
+<!-- Osnovni podaci o računu -->
 <div class="card shadow mb-4">
     <div class="card-header py-3">
         <h6 class="m-0 font-weight-bold text-primary">Informacije o računu</h6>
     </div>
     <div class="card-body">
-        <dl class="row mb-0">
-            <dt class="col-sm-3 fw-bold">Vrijeme otvaranja</dt>
-            <dd class="col-sm-9">@Model.VrijemeOtvaranja.ToString("dd.MM.yyyy HH:mm:ss")</dd>
+        <div class="row">
+            <div class="col-md-6">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 fw-bold">Vrijeme otvaranja</dt>
+                    <dd class="col-sm-7">@Model.VrijemeOtvaranja.ToString("dd.MM.yyyy HH:mm:ss")</dd>
 
-            <dt class="col-sm-3 fw-bold">Vrijeme zatvaranja</dt>
-            <dd class="col-sm-9">@(Model.VrijemeZatvaranja.HasValue ? Model.VrijemeZatvaranja.Value.ToString("dd.MM.yyyy HH:mm:ss") : "Račun još nije zatvoren")</dd>
+                    <dt class="col-sm-5 fw-bold">Vrijeme zatvaranja</dt>
+                    <dd class="col-sm-7">@(Model.VrijemeZatvaranja.HasValue ? Model.VrijemeZatvaranja.Value.ToString("dd.MM.yyyy HH:mm:ss") : "Račun još nije zatvoren")</dd>
 
-            <dt class="col-sm-3 fw-bold">Ukupna cijena</dt>
-            <dd class="col-sm-9 fw-bold text-success">@Model.UkupnaCijena €</dd>
+                    <dt class="col-sm-5 fw-bold">Način plaćanja</dt>
+                    <dd class="col-sm-7">@(Model.NacinPlacanja?.ToString() ?? "Nije odabrano")</dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 fw-bold">Konobar</dt>
+                    <dd class="col-sm-7">@(Model.Konobar?.Ime ?? "N/A") @(Model.Konobar?.Prezime ?? "")</dd>
 
-            <dt class="col-sm-3 fw-bold">Konobar</dt>
-            <dd class="col-sm-9">@(Model.Konobar?.Ime ?? "N/A")</dd>
+                    <dt class="col-sm-5 fw-bold">Stol</dt>
+                    <dd class="col-sm-7">Broj @(Model.Stol?.BrojStola.ToString() ?? "N/A")</dd>
 
-            <dt class="col-sm-3 fw-bold">Stol</dt>
-            <dd class="col-sm-9">Broj stola: @(Model.Stol?.BrojStola.ToString() ?? "N/A")</dd>
-        </dl>
+                    <dt class="col-sm-5 fw-bold text-danger">Ukupna cijena</dt>
+                    <dd class="col-sm-7 fw-bold text-danger">@ukupnaCijena.ToString("F2") €</dd>
+                </dl>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Narudžbe i stavke -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Narudžbe i stavke</h6>
+    </div>
+    <div class="card-body">
+        @if (Model?.Narudzbas != null && Model.Narudzbas.Count > 0)
+        {
+            @foreach (var narudzba in Model.Narudzbas)
+            {
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <div class="mb-3">
+                        <h6 class="mb-2">
+                            <span class="badge bg-info">Narudžba #@narudzba.NarudzbaId</span>
+                            <span class="text-muted">Vrijeme: @narudzba.VrijemeNarudzbe.ToString("dd.MM.yyyy HH:mm:ss")</span>
+                        </h6>
+                    </div>
+
+                    @if (narudzba?.Stavkanarudzbes != null && narudzba.Stavkanarudzbes.Count > 0)
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Proizvod</th>
+                                        <th class="text-center">Količina</th>
+                                        <th class="text-end">Cijena po komadu</th>
+                                        <th class="text-end">Ukupno</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        decimal narudzbaUkupno = 0;
+                                    }
+                                    @foreach (var stavka in narudzba.Stavkanarudzbes)
+                                    {
+                                        decimal stavkaUkupno = (stavka.Proizvod?.Cijena ?? 0) * stavka.Kolicina;
+                                        narudzbaUkupno += stavkaUkupno;
+
+                                        <tr>
+                                            <td>@(stavka.Proizvod?.Naziv ?? "N/A")</td>
+                                            <td class="text-center">@stavka.Kolicina</td>
+                                            <td class="text-end">@(stavka.Proizvod?.Cijena.ToString("F2") ?? "0.00") €</td>
+                                            <td class="text-end fw-bold">@stavkaUkupno.ToString("F2") €</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="table-light fw-bold">
+                                        <td colspan="3" class="text-end">Ukupno za narudžbu:</td>
+                                        <td class="text-end">@narudzbaUkupno.ToString("F2") €</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mb-0">
+                            Nema stavki u ovoj narudžbi
+                        </div>
+                    }
+                </div>
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                Nema narudžbi za ovaj račun
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Rezime -->
+<div class="card shadow">
+    <div class="card-body bg-light">
+        <div class="row">
+            <div class="col-md-6"></div>
+            <div class="col-md-6">
+                <h5 class="mb-3">REZIME RAČUNA</h5>
+                <dl class="row">
+                    <dt class="col-sm-6 text-end">Ukupna cijena:</dt>
+                    <dd class="col-sm-6 fw-bold text-danger" style="font-size: 1.25rem;">@ukupnaCijena.ToString("F2") €</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
 

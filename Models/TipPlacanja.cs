@@ -1,11 +1,7 @@
-using NpgsqlTypes;
 namespace SUPK.Models;
 
 public enum TipPlacanja
 {
-    [PgName("GOTOVINA")]
-    Gotovina,
-
-    [PgName("KARTICA")]
-    Kartica
+    GOTOVINA = 0,
+    KARTICA = 1
 }

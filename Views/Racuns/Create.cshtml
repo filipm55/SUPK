@@ -44,7 +44,18 @@
                 </select>
                 <span asp-validation-for="Racun.KonobarId"
                       class="text-danger"></span>
-            </div>   
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Racun.NacinPlacanja" class="form-label">Način plaćanja</label>
+                <select asp-for="Racun.NacinPlacanja"
+                        asp-items="ViewBag.NacinPlacanja"
+                        class="form-select">
+                    <option value="">-- Odaberite način plaćanja --</option>
+                </select>
+                <span asp-validation-for="Racun.NacinPlacanja"
+                      class="text-danger"></span>
+            </div>
             
         </div>
     </div>
