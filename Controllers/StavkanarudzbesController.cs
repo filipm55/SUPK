@@ -49,7 +49,7 @@ namespace SUPK.Controllers
         public IActionResult Create()
         {
             ViewData["NarudzbaId"] = new SelectList(_context.Narudzbas, "NarudzbaId", "NarudzbaId");
-            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "ProizvodId");
+            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "Naziv");
             return View();
         }
 
@@ -85,7 +85,7 @@ namespace SUPK.Controllers
                 return NotFound();
             }
             ViewData["NarudzbaId"] = new SelectList(_context.Narudzbas, "NarudzbaId", "NarudzbaId", stavkanarudzbe.NarudzbaId);
-            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "ProizvodId", stavkanarudzbe.ProizvodId);
+            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "Naziv", stavkanarudzbe.ProizvodId);
             return View(stavkanarudzbe);
         }
 
@@ -122,7 +122,7 @@ namespace SUPK.Controllers
                 return RedirectToAction(nameof(Index));
             }
             ViewData["NarudzbaId"] = new SelectList(_context.Narudzbas, "NarudzbaId", "NarudzbaId", stavkanarudzbe.NarudzbaId);
-            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "ProizvodId", stavkanarudzbe.ProizvodId);
+            ViewData["ProizvodId"] = new SelectList(_context.Proizvods, "ProizvodId", "Naziv", stavkanarudzbe.ProizvodId);
             return View(stavkanarudzbe);
         }
 

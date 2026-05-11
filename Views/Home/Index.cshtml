@@ -1,85 +1,82 @@
-﻿@model IEnumerable<SUPK.Models.Narudzba>
+﻿@model IEnumerable<SUPK.Models.Racun>
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Početna - Racuni";
 }
 
 <div class="text-center mb-4">
-    <h1 class="display-4">Glavna stranica - Master Detail</h1>
-    <p>Prikaz narudžbi i njihovih stavki </p>
+    <h1 class="display-4 fw-bold text-primary">Sustav za upravljanje stolovima i pozivanje konobara u kafiću</h1>
+  
 </div>
 
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-md-5">
-            <h3 class="mb-3">Narudžbe</h3>
-            <div class="list-group">
-                @foreach(var n in Model)
-                {
-                    <a href="?id=@n.NarudzbaId" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(Context.Request.Query["id"] == n.NarudzbaId.ToString() ? "active" : "")">
-                        <div>
-                            <strong>Narudžba ID:</strong> @n.NarudzbaId <br/>
-                            <strong>Račun ID:</strong> @n.RacunId <br/>
-                            <strong>Vrijeme:</strong> @n.VrijemeNarudzbe.ToString("g") <br/>
-                        </div>
-                        <span class="btn btn-sm @(Context.Request.Query["id"] == n.NarudzbaId.ToString() ? "btn-light" : "btn-primary")">Pokaži stavke</span>
-                    </a>
-                }
+    <div class="card shadow">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap">
+            <h5 class="m-0 font-weight-bold text-primary">Popis Računa</h5>
+
+            <div class="d-flex align-items-center mt-2 mt-md-0">
+                <form asp-action="Index" method="get" class="d-flex me-3">
+                    <input type="text" name="searchString" value="@ViewData["CurrentFilter"]" class="form-control me-2" placeholder="Pretraži po konobaru, stolu, ID..." aria-label="Pretraga">
+                    <button type="submit" class="btn btn-outline-primary">Traži</button>
+                    @if (!string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()))
+                    {
+                        <a asp-action="Index" class="btn btn-link text-decoration-none">Poništi</a>
+                    }
+                </form>
+                <a asp-controller="Racuns" asp-action="Create" class="btn btn-success d-flex align-items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg me-2" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2Z"/>
+                    </svg>
+                    Novi račun
+                </a>
             </div>
         </div>
-        <div class="col-md-7">
-            <h3 class="mb-3">Odabrana narudžba</h3>
-            @{
-                var selectedIdText = Context.Request.Query["id"];
-                if(!string.IsNullOrEmpty(selectedIdText) && int.TryParse(selectedIdText, out int selectedId))
-                {
-                    var selectedNarudzba = Model.FirstOrDefault(x => x.NarudzbaId == selectedId);
-                    if(selectedNarudzba != null)
-                    {
-                        var dbContext = new SUPK.Models.CaffeBarDbContext();
-                        var stavke = dbContext.Stavkanarudzbes.Where(s => s.NarudzbaId == selectedId).ToList();
-                        
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-primary text-white">
-                                <h5 class="mb-0">Detalji za Narudžbu ID: @selectedId</h5>
-                            </div>
-                            <div class="card-body p-0">
-                                @if(stavke.Any())
-                                {
-                                    <table class="table table-hover mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Stavka ID</th>
-                                                <th>Proizvod ID</th>
-                                                <th>Količina</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach(var s in stavke)
-                                            {
-                                                <tr>
-                                                    <td>@s.StavkaId</td>
-                                                    <td>@s.ProizvodId</td>
-                                                    <td>@s.Kolicina</td>
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
-                                }
-                                else
-                                {
-                                    <div class="p-3 text-muted text-center">Nema stavki za ovu narudžbu.</div>
-                                }
-                            </div>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="alert alert-info" role="alert">
-                        Odaberite narudžbu s popisa za prikaz njezinih stavki.
-                    </div>
-                }
-            }
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Broj računa</th>
+                            <th>Otvoren</th>
+                            <th>Stol</th>
+                            <th>Konobar</th>
+                            <th class="text-end">Ukupno</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Akcije</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(!Model.Any())
+                        {
+                            <tr><td colspan="7" class="text-center py-4">Nema pronađenih računa.</td></tr>
+                        }
+                        @foreach (var racun in Model)
+                        {
+                            <tr>
+                                <td><strong>#@racun.RacunId</strong></td>
+                                <td>@racun.VrijemeOtvaranja.ToString("dd.MM.yyyy HH:mm")</td>
+                                <td><span class="badge bg-secondary">Stol @racun.Stol?.BrojStola</span></td>
+                                <td>@(racun.Konobar?.Ime ?? "N/A")</td>
+                                <td class="text-end fw-bold">@racun.UkupnaCijena</td>
+                                <td class="text-center">
+                                    @if (racun.VrijemeZatvaranja.HasValue)
+                                    {
+                                        <span class="badge bg-success">Zatvoren</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">Otvoren</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <a asp-controller="Racuns" asp-action="Edit" asp-route-id="@racun.RacunId" class="btn btn-sm btn-primary">Uredi</a>
+                                    <a asp-controller="Racuns" asp-action="Details" asp-route-id="@racun.RacunId" class="btn btn-sm btn-info text-white">Detalji</a>
+                                    <a asp-controller="Racuns" asp-action="Delete" asp-route-id="@racun.RacunId" class="btn btn-sm btn-danger">Obriši</a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>

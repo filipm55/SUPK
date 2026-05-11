@@ -1,0 +1,79 @@
+﻿@model SUPK.Models.Racun
+
+@{
+    ViewData["Title"] = "Uredi račun";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <h1 class="h3 mb-0 text-gray-800">Uredi račun #@Model.RacunId</h1>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Osnovni podaci računa</h6>
+    </div>
+    <div class="card-body">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+            <input type="hidden" asp-for="RacunId" />
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label asp-for="VrijemeOtvaranja" class="form-label fw-bold">Vrijeme otvaranja</label>
+                    <input asp-for="VrijemeOtvaranja" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="VrijemeOtvaranja" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <label asp-for="VrijemeZatvaranja" class="form-label fw-bold">Vrijeme zatvaranja</label>
+                    <input asp-for="VrijemeZatvaranja" class="form-control" type="datetime-local" />
+                    <span asp-validation-for="VrijemeZatvaranja" class="text-danger small"></span>
+                    <div class="form-text">Ostavite prazno ako račun još nije zatvoren.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label asp-for="StolId" class="form-label fw-bold">Stol</label>
+                    <select asp-for="StolId" class="form-select" asp-items="ViewBag.StolId"></select>
+                    <span asp-validation-for="StolId" class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label asp-for="KonobarId" class="form-label fw-bold">Konobar</label>
+                    <select asp-for="KonobarId" class="form-select" asp-items="ViewBag.KonobarId"></select>
+                    <span asp-validation-for="KonobarId" class="text-danger"></span>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label asp-for="NacinPlacanja" class="form-label">Način plaćanja</label>
+                    @* <select asp-for="NacinPlacanja" class="form-select"
+                            asp-items="Html.GetEnumSelectList<SUPK.Models.TipPlacanja>()">
+                        <option value="">-- Odaberite način plaćanja --</option>
+                    </select> *@
+                    <select asp-for="NacinPlacanja" class="form-select">
+                        <option value="">-- Odaberite način plaćanja --</option>
+                        <option value="GOTOVINA">Gotovina</option>
+                        <option value="KARTICA">Kartica</option>
+                    </select>
+                    <span asp-validation-for="NacinPlacanja"
+                          class="text-danger"></span>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label asp-for="UkupnaCijena" class="form-label fw-bold">Ukupna cijena (€)</label>
+                    <input asp-for="UkupnaCijena" class="form-control" type="number" step="0.01" />
+                    <span asp-validation-for="UkupnaCijena" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary px-4">Spremi promjene</button>
+                <a asp-action="Index" class="btn btn-outline-secondary ms-2">Odustani i vrati se nazad</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 
 namespace SUPK.Models;
 
@@ -10,12 +11,15 @@ public partial class Racun
     public DateTime VrijemeOtvaranja { get; set; }
 
     public DateTime? VrijemeZatvaranja { get; set; }
+    public string? NacinPlacanja { get; set; } = null;
 
     public decimal? UkupnaCijena { get; set; }
 
-    public int StolId { get; set; }
+    [Required(ErrorMessage = "Molimo odaberite stol.")]
+    public int? StolId { get; set; }
 
-    public int KonobarId { get; set; }
+    [Required(ErrorMessage = "Molimo odaberite konobara.")]
+    public int? KonobarId { get; set; }
 
     public virtual Konobar Konobar { get; set; } = null!;
 

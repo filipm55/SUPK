@@ -1,0 +1,38 @@
+﻿@model SUPK.Models.Racun
+
+@{
+    ViewData["Title"] = "Detalji računa";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3 mt-3">
+    <h1 class="h3 mb-0 text-gray-800">Detalji računa #@Model.RacunId</h1>
+    <div>
+        <a asp-action="Edit" asp-route-id="@Model?.RacunId" class="btn btn-primary">Uredi</a>
+        <a asp-action="Index" class="btn btn-secondary ms-2">Natrag na listu</a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Informacije o računu</h6>
+    </div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3 fw-bold">Vrijeme otvaranja</dt>
+            <dd class="col-sm-9">@Model.VrijemeOtvaranja.ToString("dd.MM.yyyy HH:mm:ss")</dd>
+
+            <dt class="col-sm-3 fw-bold">Vrijeme zatvaranja</dt>
+            <dd class="col-sm-9">@(Model.VrijemeZatvaranja.HasValue ? Model.VrijemeZatvaranja.Value.ToString("dd.MM.yyyy HH:mm:ss") : "Račun još nije zatvoren")</dd>
+
+            <dt class="col-sm-3 fw-bold">Ukupna cijena</dt>
+            <dd class="col-sm-9 fw-bold text-success">@Model.UkupnaCijena €</dd>
+
+            <dt class="col-sm-3 fw-bold">Konobar</dt>
+            <dd class="col-sm-9">@(Model.Konobar?.Ime ?? "N/A")</dd>
+
+            <dt class="col-sm-3 fw-bold">Stol</dt>
+            <dd class="col-sm-9">Broj stola: @(Model.Stol?.BrojStola.ToString() ?? "N/A")</dd>
+        </dl>
+    </div>
+</div>
+

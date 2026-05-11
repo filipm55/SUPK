@@ -1,0 +1,168 @@
+﻿@model SUPK.ViewModels.RacunCreateViewModel
+
+@{
+    ViewData["Title"] = "Novi račun";
+}
+
+<h1>Novi račun</h1>
+
+<hr />
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="Create" method="post">
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Podaci računa</h4>
+
+            <div class="mb-3">
+                <label asp-for="Racun.VrijemeOtvaranja" class="form-label"></label>
+                <input asp-for="Racun.VrijemeOtvaranja"
+                       type="datetime-local"
+                       class="form-control" />
+                <span asp-validation-for="Racun.VrijemeOtvaranja"
+                      class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Racun.StolId" class="form-label">Stol</label>
+                <select asp-for="Racun.StolId"
+                        asp-items="ViewBag.StolId"
+                        class="form-select">
+                    <option value="">-- Odaberite stol --</option>
+                </select>
+                <span asp-validation-for="Racun.StolId"
+                      class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Racun.KonobarId" class="form-label">Konobar</label>
+                <select asp-for="Racun.KonobarId"
+                        asp-items="ViewBag.KonobarId"
+                        class="form-select">
+                    <option value="">-- Odaberite konobara --</option>
+                </select>
+                <span asp-validation-for="Racun.KonobarId"
+                      class="text-danger"></span>
+            </div>   
+            
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>Stavke narudžbe</h4>
+        <button type="button" id="dodajStavku" class="btn btn-sm btn-outline-success">
+            + Dodaj stavku
+        </button>
+    </div>
+
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Proizvod</th>
+                <th>Količina</th>
+                <th style="width: 50px;"></th>
+            </tr>
+        </thead>
+        <tbody id="stavkeContainer">
+            @for (int i = 0; i < Model.Stavke.Count; i++)
+            {
+                <tr class="stavka-red">
+                    <td>
+                        <select asp-for="Stavke[@i].ProizvodId"
+                                asp-items="ViewBag.Proizvodi"
+                                class="form-select proizvod-select" name="Stavke[@i].ProizvodId">
+                            <option value="">-- Odaberite proizvod --</option>
+                        </select>
+                        <span asp-validation-for="Stavke[@i].ProizvodId"
+                              class="text-danger"></span>
+                    </td>
+                    <td>
+                        <input asp-for="Stavke[@i].Kolicina"
+                               class="form-control" name="Stavke[@i].Kolicina"
+                               type="number"
+                               min="1" />
+                        <span asp-validation-for="Stavke[@i].Kolicina"
+                              class="text-danger"></span>
+                    </td>
+                    <td class="text-center align-middle">
+                        <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary px-4">Spremi račun</button>
+        <a asp-action="Index" class="btn btn-outline-secondary ms-2">Odustani</a>
+    </div>
+</form>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function () {
+           
+            var optionsHtml = $('.proizvod-select').first().html();
+
+            // Dodavanja nove stavke
+            $("#dodajStavku").click(function () {
+                var currentIndex = $(".stavka-red").length;
+
+                var noviRed = `
+                    <tr class="stavka-red">
+                        <td>
+                            <select class="form-select proizvod-select" 
+                                    name="Stavke[${currentIndex}].ProizvodId" 
+                                    id="Stavke_${currentIndex}__ProizvodId">
+                                ${optionsHtml}
+                            </select>
+                        </td>
+                        <td>
+                            <input type="number" 
+                                   class="form-control" 
+                                   name="Stavke[${currentIndex}].Kolicina" 
+                                   id="Stavke_${currentIndex}__Kolicina" 
+                                   value="1" min="1" />
+                        </td>
+                        <td class="text-center align-middle">
+                            <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
+                        </td>
+                    </tr>
+                `;
+
+                $("#stavkeContainer").append(noviRed);
+            });
+
+            // Brisanje i osvježavanje stakve
+            $(document).on("click", ".obrisi-stavku", function () {
+                if ($(".stavka-red").length > 1) {
+                    $(this).closest("tr").remove();
+                    osvjeziIndekse();
+                } else {
+                    alert("Račun mora imati barem jednu stavku!");
+                }
+            });
+
+            function osvjeziIndekse() {
+                $(".stavka-red").each(function (index) {
+                    
+                    var select = $(this).find("select");
+                    select.attr("name", `Stavke[${index}].ProizvodId`);
+                    select.attr("id", `Stavke_${index}__ProizvodId`);
+
+                    
+                    var input = $(this).find("input[type='number']");
+                    input.attr("name", `Stavke[${index}].Kolicina`);
+                    input.attr("id", `Stavke_${index}__Kolicina`);
+                });
+            }
+        });
+    </script>
+}

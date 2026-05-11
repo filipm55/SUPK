@@ -29,17 +29,15 @@ public partial class CaffeBarDbContext : DbContext
 
     public virtual DbSet<Stol> Stols { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseNpgsql("Host=localhost;Port=5433;Database=CaffeBar_db;Username=postgres;Password=gamecih1");
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder
             .HasPostgresEnum("status_poziva", new[] { "CEKA", "RIJESENO" })
             .HasPostgresEnum("stol_status", new[] { "SLOBODAN", "ZAUZET", "POZIV" })
-            .HasPostgresEnum("tip_placanja", new[] { "GOTOVINA", "KARTICA" })
-            .HasPostgresEnum("tip_poziva", new[] { "GRESKA", "NARUDZBA", "PLACANJE" });
+            .HasPostgresEnum("tip_poziva", new[] { "GRESKA", "NARUDZBA", "PLACANJE" })
+            .HasPostgresEnum("tip_placanja", new[] {"GOTOVINA", "KARTICA"});
+
+        //modelBuilder.HasPostgresEnum<TipPlacanja>("public", "tip_placanja");
 
         modelBuilder.Entity<Konobar>(entity =>
         {
@@ -130,6 +128,10 @@ public partial class CaffeBarDbContext : DbContext
             entity.Property(e => e.VrijemeZatvaranja)
                 .HasColumnType("timestamp without time zone")
                 .HasColumnName("vrijeme_zatvaranja");
+
+            entity.Property(e => e.NacinPlacanja)
+                .HasColumnName("nacin_placanja")
+                .HasColumnType("tip_placanja");
 
             entity.HasOne(d => d.Konobar).WithMany(p => p.Racuns)
                 .HasForeignKey(d => d.KonobarId)
