@@ -7,6 +7,15 @@ namespace SUPK.ViewModels
     {
         public Racun Racun { get; set; } = new Racun();
 
+        public List<NarudzbaEditViewModel> Narudzbe { get; set; } = new();
+    }
+
+    public class NarudzbaEditViewModel
+    {
+        public int? NarudzbaId { get; set; }
+        
+        public DateTime VrijemeNarudzbe { get; set; }
+
         public List<StavkaEditViewModel> Stavke { get; set; } = new();
     }
 

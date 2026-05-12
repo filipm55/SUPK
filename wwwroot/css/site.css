@@ -8,24 +8,62 @@ html {
   }
 }
 
+body {
+  margin: 0;
+  padding-bottom: 100px; /* space for footer */
+  background: #f8fafc;
+  color: #212529;
+}
+
+.footer {
+  background-color: #fff;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  z-index: 10;
+}
+
+.app-header {
+  background: linear-gradient(90deg, #0d6efd, #0c8eda);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.header-title h1 {
+  color: #fff;
+  font-size: 1rem;
+}
+
+.header-title .small {
+  color: rgba(255,255,255,0.85);
+}
+
+.btn-spacing-group {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn + .btn {
+  margin-left: 0.5rem;
+}
+
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
   box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
-html {
-  position: relative;
-  min-height: 100%;
+.card {
+  border: none;
+  border-radius: 0.6rem;
 }
 
-body {
-  margin-bottom: 60px;
+.table thead th {
+  background: #fbfbfc;
+  border-bottom: 2px solid rgba(0,0,0,0.05);
 }
 
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+.form-text {
+  color: #6c757d;
 }

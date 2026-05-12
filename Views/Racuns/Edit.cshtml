@@ -13,7 +13,7 @@
         <h6 class="m-0 font-weight-bold text-primary">Osnovni podaci računa</h6>
     </div>
     <div class="card-body">
-        <form asp-action="Edit">
+        <form asp-action="Edit" method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
             <input type="hidden" asp-for="Racun.RacunId" />
 
@@ -46,63 +46,80 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <label asp-for="Racun.NacinPlacanja" class="form-label">Način plaćanja</label>
-                    <select asp-for="Racun.NacinPlacanja" 
-                            asp-items="ViewBag.NacinPlacanja" 
-                            class="form-select">
+                    <select asp-for="Racun.NacinPlacanja" asp-items="ViewBag.NacinPlacanja" class="form-select">
                         <option value="">-- Odaberite način plaćanja --</option>
                     </select>
-                    <span asp-validation-for="Racun.NacinPlacanja"
-                          class="text-danger"></span>
+                    <span asp-validation-for="Racun.NacinPlacanja" class="text-danger"></span>
                 </div>
             </div>
 
             <hr />
 
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="m-0 font-weight-bold text-primary">Stavke računa</h6>
-                <button type="button" id="dodajStavku" class="btn btn-sm btn-outline-success">
-                    + Dodaj stavku
-                </button>
+                <h6 class="m-0 font-weight-bold text-primary">Narudžbe (možete dodavati više)</h6>
+                <div class="btn-spacing-group">
+                    <button type="button" id="dodajNarudzbu" class="btn btn-sm btn-outline-primary">+ Dodaj narudžbu</button>
+                </div>
             </div>
 
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Proizvod</th>
-                        <th>Količina</th>
-                        <th style="width: 50px;"></th>
-                    </tr>
-                </thead>
-                <tbody id="stavkeContainer">
-                    @for (int i = 0; i < Model.Stavke.Count; i++)
-                    {
-                        <tr class="stavka-red">
-                            <td>
-                                <input type="hidden" asp-for="Stavke[@i].StavkaId" name="Stavke[@i].StavkaId" />
-                                <select asp-for="Stavke[@i].ProizvodId"
-                                        asp-items="ViewBag.Proizvodi"
-                                        class="form-select proizvod-select" name="Stavke[@i].ProizvodId">
-                                    <option value="">-- Odaberite proizvod --</option>
-                                </select>
-                                <span asp-validation-for="Stavke[@i].ProizvodId" class="text-danger"></span>
-                            </td>
-                            <td>
-                                <input asp-for="Stavke[@i].Kolicina"
-                                       class="form-control" name="Stavke[@i].Kolicina"
-                                       type="number" min="1" />
-                                <span asp-validation-for="Stavke[@i].Kolicina" class="text-danger"></span>
-                            </td>
-                            <td class="text-center align-middle">
-                                <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <div id="narudzbeContainer">
+                @for (int ni = 0; ni < Model.Narudzbe.Count; ni++)
+                {
+                    <div class="card mb-3 narudzba-block">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Narudžba #@Model.Narudzbe[ni].NarudzbaId</h6>
+                                <button type="button" class="btn btn-sm btn-outline-danger obrisi-narudzbu">Obriši narudžbu</button>
+                            </div>
+
+                            <input type="hidden" asp-for="Narudzbe[@ni].NarudzbaId" />
+
+                            <div class="mb-2">
+                                <label class="form-label small">Vrijeme narudžbe</label>
+                                <input asp-for="Narudzbe[@ni].VrijemeNarudzbe" class="form-control" type="datetime-local" />
+                            </div>
+
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Proizvod</th>
+                                        <th style="width:120px">Količina</th>
+                                        <th style="width:50px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody class="stavkeContainer">
+                                    @for (int si = 0; si < Model.Narudzbe[ni].Stavke.Count; si++)
+                                    {
+                                        <tr class="stavka-red">
+                                            <td>
+                                                <input type="hidden" asp-for="Narudzbe[@ni].Stavke[@si].StavkaId" />
+                                                <select asp-for="Narudzbe[@ni].Stavke[@si].ProizvodId" asp-items="ViewBag.Proizvodi" class="form-select proizvod-select"></select>
+                                            </td>
+                                            <td>
+                                                <input asp-for="Narudzbe[@ni].Stavke[@si].Kolicina" class="form-control" type="number" min="1" />
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3" class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-success dodaj-stavku">+ Dodaj stavku</button>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                }
+            </div>
 
             <div class="mt-4">
                 <button type="submit" class="btn btn-primary px-4">Spremi promjene</button>
-                <a asp-action="Index" class="btn btn-outline-secondary ms-2">Odustani i vrati se nazad</a>
+                <a asp-action="Index" asp-controller="Home" class="btn btn-outline-secondary ms-2">Odustani</a>
             </div>
         </form>
     </div>
@@ -112,59 +129,145 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 
     <script>
-        $(document).ready(function () {
-            var optionsHtml = $('.proizvod-select').first().html();
-
-            $("#dodajStavku").click(function () {
-                var currentIndex = $(".stavka-red").length;
-
-                var noviRed = `
-                    <tr class="stavka-red">
-                        <td>
-                            <input type="hidden" name="Stavke[${currentIndex}].StavkaId" value="" />
-                            <select class="form-select proizvod-select"
-                                    name="Stavke[${currentIndex}].ProizvodId"
-                                    id="Stavke_${currentIndex}__ProizvodId">
-                                ${optionsHtml}
-                            </select>
-                        </td>
-                        <td>
-                            <input type="number"
-                                   class="form-control"
-                                   name="Stavke[${currentIndex}].Kolicina"
-                                   id="Stavke_${currentIndex}__Kolicina"
-                                   value="1" min="1" />
-                        </td>
-                        <td class="text-center align-middle">
-                            <button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button>
-                        </td>
-                    </tr>
-                `;
-
-                $("#stavkeContainer").append(noviRed);
-            });
-
-            $(document).on("click", ".obrisi-stavku", function () {
-                if ($(".stavka-red").length > 1) {
-                    $(this).closest("tr").remove();
-                    osvjeziIndekse();
-                } else {
-                    alert("Račun mora imati barem jednu stavku!");
+        $(function () {
+            // format existing datetime fields to dd.mm.yyyy HH:mm
+            $('.datetimepicker').each(function () {
+                var val = $(this).val();
+                if (val) {
+                    if (val.indexOf('T') >= 0 || /^\d{4}-\d{2}-\d{2}/.test(val)) {
+                        var d = new Date(val);
+                        if (!isNaN(d)) {
+                            var day = String(d.getDate()).padStart(2, '0');
+                            var month = String(d.getMonth() + 1).padStart(2, '0');
+                            var year = d.getFullYear();
+                            var hours = String(d.getHours()).padStart(2, '0');
+                            var minutes = String(d.getMinutes()).padStart(2, '0');
+                            $(this).val(day + '.' + month + '.' + year + ' ' + hours + ':' + minutes);
+                        }
+                    }
                 }
             });
 
-            function osvjeziIndekse() {
-                $(".stavka-red").each(function (index) {
-                    var hidden = $(this).find("input[type='hidden']");
-                    hidden.attr("name", `Stavke[${index}].StavkaId`);
+            // Before submit convert dd.mm.yyyy HH:mm -> ISO
+            $('form').on('submit', function () {
+                $('.datetimepicker').each(function () {
+                    var v = $(this).val();
+                    if (v && !v.includes('T')) {
+                        var parts = v.split(' ');
+                        if (parts.length === 2) {
+                            var dp = parts[0].split('.');
+                            var tp = parts[1].split(':');
+                            if (dp.length === 3 && tp.length >= 2) {
+                                var iso = dp[2] + '-' + dp[1] + '-' + dp[0] + 'T' + tp[0] + ':' + tp[1] + ':00';
+                                $(this).val(iso);
+                            }
+                        }
+                    }
+                });
+            });
 
-                    var select = $(this).find("select");
-                    select.attr("name", `Stavke[${index}].ProizvodId`);
-                    select.attr("id", `Stavke_${index}__ProizvodId`);
+            // helper to get options HTML for dynamic rows
+            var proizvodOptions = $('.proizvod-select').first().html() || '';
 
-                    var input = $(this).find("input[type='number']");
-                    input.attr("name", `Stavke[${index}].Kolicina`);
-                    input.attr("id", `Stavke_${index}__Kolicina`);
+            // Add new narudzba block
+            $('#dodajNarudzbu').click(function () {
+                var nIndex = $('.narudzba-block').length;
+                var block = `
+                <div class="card mb-3 narudzba-block">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Nova narudžba</h6>
+                            <button type="button" class="btn btn-sm btn-outline-danger obrisi-narudzbu">Obriši narudžbu</button>
+                        </div>
+                        <input type="hidden" name="Narudzbe[${nIndex}].NarudzbaId" value="" />
+                        <div class="mb-2">
+                            <label class="form-label small">Vrijeme narudžbe</label>
+                            <input name="Narudzbe[${nIndex}].VrijemeNarudzbe" class="form-control datetimepicker" type="text" placeholder="dd.mm.yyyy HH:mm" />
+                        </div>
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead>
+                                <tr><th>Proizvod</th><th style="width:120px">Količina</th><th style="width:50px"></th></tr>
+                            </thead>
+                            <tbody class="stavkeContainer">
+                                <tr class="stavka-red">
+                                    <td>
+                                        <input type="hidden" name="Narudzbe[${nIndex}].Stavke[0].StavkaId" value="" />
+                                        <select name="Narudzbe[${nIndex}].Stavke[0].ProizvodId" class="form-select proizvod-select">${proizvodOptions}</select>
+                                    </td>
+                                    <td><input name="Narudzbe[${nIndex}].Stavke[0].Kolicina" class="form-control" type="number" value="1" min="1" /></td>
+                                    <td class="text-center"><button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button></td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr><td colspan="3" class="text-end"><button type="button" class="btn btn-sm btn-outline-success dodaj-stavku">+ Dodaj stavku</button></td></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>`;
+
+                $('#narudzbeContainer').append(block);
+            });
+
+            // Delegate add stavku inside its narudzba block
+            $(document).on('click', '.dodaj-stavku', function () {
+                var block = $(this).closest('.narudzba-block');
+                var nIndex = $('.narudzba-block').index(block);
+                var sIndex = block.find('.stavka-red').length;
+
+                var row = `
+                    <tr class="stavka-red">
+                        <td>
+                            <input type="hidden" name="Narudzbe[${nIndex}].Stavke[${sIndex}].StavkaId" value="" />
+                            <select name="Narudzbe[${nIndex}].Stavke[${sIndex}].ProizvodId" class="form-select proizvod-select">${proizvodOptions}</select>
+                        </td>
+                        <td>
+                            <input name="Narudzbe[${nIndex}].Stavke[${sIndex}].Kolicina" class="form-control" type="number" value="1" min="1" />
+                        </td>
+                        <td class="text-center"><button type="button" class="btn btn-sm btn-danger obrisi-stavku">X</button></td>
+                    </tr>
+                `;
+                block.find('.stavkeContainer').append(row);
+            });
+
+            // Delete stavka
+            $(document).on('click', '.obrisi-stavku', function () {
+                var block = $(this).closest('.narudzba-block');
+                if (block.find('.stavka-red').length > 1) {
+                    $(this).closest('tr').remove();
+                    // reindex names inside this block
+                    reindexBlock(block);
+                } else {
+                    alert('Narudžba mora imati barem jednu stavku!');
+                }
+            });
+
+            // Delete narudzba
+            $(document).on('click', '.obrisi-narudzbu', function () {
+                if ($('.narudzba-block').length > 1) {
+                    $(this).closest('.narudzba-block').remove();
+                    reindexAll();
+                } else {
+                    if (confirm('Želite obrisati jedinu narudžbu? Ovo će obrisati i sve njezine stavke.')) {
+                        $(this).closest('.narudzba-block').remove();
+                        reindexAll();
+                    }
+                }
+            });
+
+            function reindexBlock(block) {
+                var nIndex = $('.narudzba-block').index(block);
+                block.find('.stavka-red').each(function (sIndex) {
+                    $(this).find('input[type=hidden]').attr('name', `Narudzbe[${nIndex}].Stavke[${sIndex}].StavkaId`);
+                    $(this).find('select.proizvod-select').attr('name', `Narudzbe[${nIndex}].Stavke[${sIndex}].ProizvodId`).attr('id', `Narudzbe_${nIndex}__Stavke_${sIndex}__ProizvodId`);
+                    $(this).find('input[type=number]').attr('name', `Narudzbe[${nIndex}].Stavke[${sIndex}].Kolicina`).attr('id', `Narudzbe_${nIndex}__Stavke_${sIndex}__Kolicina`);
+                });
+            }
+
+            function reindexAll() {
+                $('.narudzba-block').each(function (nIndex) {
+                    $(this).find('input[name$=".NarudzbaId"]').attr('name', `Narudzbe[${nIndex}].NarudzbaId`);
+                    $(this).find('.datetimepicker').first().attr('name', `Narudzbe[${nIndex}].VrijemeNarudzbe`);
+                    reindexBlock($(this));
                 });
             }
         });

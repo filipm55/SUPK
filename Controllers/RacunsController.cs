@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SUPK.Models;
 using SUPK.ViewModels;
+using System.Text.Json;
 
 namespace SUPK.Controllers
 {
@@ -16,10 +17,9 @@ namespace SUPK.Controllers
         }
 
         // GET: Racuns
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            var caffeBarDbContext = _context.Racuns.Include(r => r.Konobar).Include(r => r.Stol);
-            return View(await caffeBarDbContext.ToListAsync());
+            return RedirectToAction("Index", "Home");
         }
 
         // GET: Racuns/Details/5
@@ -47,33 +47,25 @@ namespace SUPK.Controllers
         }
 
         // GET: Racuns/Create
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
-            ViewData["KonobarId"] = new SelectList(
-                _context.Konobars.Select(k => new
-                {
-                    k.KonobarId,
-                    PunoIme = k.Ime + " " + k.Prezime
-                }),
-                "KonobarId",
-                "PunoIme");
+            var konobari = await _context.Konobars
+                .Select(k => new { k.KonobarId, PunoIme = k.Ime + " " + k.Prezime })
+                .ToListAsync();
+
+            ViewData["KonobarId"] = new SelectList(konobari, "KonobarId", "PunoIme");
 
             ViewData["StolId"] = new SelectList(
-                _context.Stols,
+                await _context.Stols.ToListAsync(),
                 "StolId",
                 "BrojStola");
 
-            ViewData["Proizvodi"] = new SelectList(
-                _context.Proizvods,
-                "ProizvodId",
-                "Naziv");
+            var proizvodiList = await _context.Proizvods
+                .Select(p => new { p.ProizvodId, p.Naziv, Cijena = p.Cijena })
+                .ToListAsync();
 
-            ViewData["NacinPlacanja"] = new SelectList(
-                Enum.GetValues(typeof(TipPlacanja))
-                    .Cast<TipPlacanja>()
-                    .Select(e => new { Value = e, Text = e.ToString() }),
-                "Value",
-                "Text");
+            ViewData["Proizvodi"] = new SelectList(proizvodiList, "ProizvodId", "Naziv");
+            ViewBag.ProizvodiJson = JsonSerializer.Serialize(proizvodiList);
 
             var vm = new RacunCreateViewModel();
 
@@ -86,8 +78,6 @@ namespace SUPK.Controllers
         }
 
         // POST: Racuns/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(RacunCreateViewModel vm)
@@ -157,9 +147,20 @@ namespace SUPK.Controllers
 
                 await _context.SaveChangesAsync();
 
+                // Izracunaj ukupnu cijenu racuna iz stavki
+                var total = await _context.Stavkanarudzbes
+                    .Where(s => s.NarudzbaId == narudzba.NarudzbaId)
+                    .Include(s => s.Proizvod)
+                    .Select(s => (decimal?)s.Kolicina * s.Proizvod.Cijena)
+                    .SumAsync();
+
+                vm.Racun.UkupnaCijena = total ?? 0m;
+                _context.Racuns.Update(vm.Racun);
+                await _context.SaveChangesAsync();
+
                 await transaction.CommitAsync();
 
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Index", "Home");
             }
             catch
             {
@@ -184,12 +185,18 @@ namespace SUPK.Controllers
             {
                 return NotFound();
             }
-            ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", racun.KonobarId);
-            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", racun.StolId);
-            ViewData["Proizvodi"] = new SelectList(
-                await _context.Proizvods.ToListAsync(),
-                "ProizvodId",
-                "Naziv");
+
+            ViewData["KonobarId"] = new SelectList(
+                _context.Konobars.Select(k => new
+                {
+                    k.KonobarId,
+                    PunoIme = k.Ime + " " + k.Prezime
+                }),
+                "KonobarId",
+                "PunoIme",
+                racun.KonobarId);
+
+            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "BrojStola", racun.StolId);
 
             ViewData["NacinPlacanja"] = new SelectList(
                 Enum.GetValues(typeof(TipPlacanja))
@@ -199,31 +206,43 @@ namespace SUPK.Controllers
                 "Text",
                 racun.NacinPlacanja);
 
+            var proizvodiList = await _context.Proizvods
+                .Select(p => new { p.ProizvodId, p.Naziv, Cijena = p.Cijena })
+                .ToListAsync();
+            ViewData["Proizvodi"] = new SelectList(proizvodiList, "ProizvodId", "Naziv");
+            ViewBag.ProizvodiJson = JsonSerializer.Serialize(proizvodiList);
+
             var vm = new RacunEditViewModel
             {
                 Racun = racun,
-                Stavke = racun.Narudzbas
-                    .SelectMany(n => n.Stavkanarudzbes)
-                    .Select(s => new StavkaEditViewModel
+                Narudzbe = racun.Narudzbas.Select(n => new NarudzbaEditViewModel
+                {
+                    NarudzbaId = n.NarudzbaId,
+                    VrijemeNarudzbe = n.VrijemeNarudzbe,
+                    Stavke = n.Stavkanarudzbes.Select(s => new StavkaEditViewModel
                     {
                         StavkaId = s.StavkaId,
                         ProizvodId = s.ProizvodId,
                         Kolicina = s.Kolicina
-                    })
-                    .ToList()
+                    }).ToList()
+                }).ToList()
             };
 
-            if (!vm.Stavke.Any())
+            if (!vm.Narudzbe.Any())
             {
-                vm.Stavke.Add(new StavkaEditViewModel());
+                vm.Narudzbe.Add(new NarudzbaEditViewModel { VrijemeNarudzbe = DateTime.Now });
+            }
+
+            foreach (var narudzbaVm in vm.Narudzbe)
+            {
+                if (!narudzbaVm.Stavke.Any())
+                    narudzbaVm.Stavke.Add(new StavkaEditViewModel());
             }
 
             return View(vm);
         }
 
         // POST: Racuns/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, RacunEditViewModel vm)
@@ -242,7 +261,6 @@ namespace SUPK.Controllers
                 return NotFound();
             }
 
-            // Očistite navigacijska svojstva iz ModelState validacije
             ModelState.Remove("Racun.Konobar");
             ModelState.Remove("Racun.Stol");
             ModelState.Remove("Racun.Narudzbas");
@@ -257,7 +275,7 @@ namespace SUPK.Controllers
                 ModelState.AddModelError("Racun.VrijemeZatvaranja", "Račun mora sadržavati vrijeme zatvaranja.");
             }
 
-            vm.Stavke ??= new();
+            vm.Narudzbe ??= new();
 
             if (ModelState.IsValid)
             {
@@ -271,67 +289,73 @@ namespace SUPK.Controllers
                     racunFromDb.StolId = vm.Racun.StolId;
                     racunFromDb.KonobarId = vm.Racun.KonobarId;
 
-                    var narudzba = racunFromDb.Narudzbas.OrderByDescending(n => n.NarudzbaId).FirstOrDefault();
-                    if (narudzba == null)
+                    var postedNarudzbaIds = vm.Narudzbe.Where(n => n.NarudzbaId.HasValue).Select(n => n.NarudzbaId!.Value).ToHashSet();
+
+                    var narudzbasToRemove = racunFromDb.Narudzbas.Where(n => !postedNarudzbaIds.Contains(n.NarudzbaId)).ToList();
+                    _context.Narudzbas.RemoveRange(narudzbasToRemove);
+
+                    foreach (var nVm in vm.Narudzbe)
                     {
-                        narudzba = new Narudzba
+                        Narudzba narudzbaEntity;
+                        if (nVm.NarudzbaId.HasValue && nVm.NarudzbaId.Value > 0)
                         {
-                            VrijemeNarudzbe = DateTime.Now,
-                            RacunId = racunFromDb.RacunId
-                        };
-                        _context.Narudzbas.Add(narudzba);
-                        await _context.SaveChangesAsync();
-                    }
-
-                    var validStavke = vm.Stavke
-                        .Where(s => s.ProizvodId.HasValue && s.Kolicina.HasValue && s.Kolicina.Value > 0)
-                        .ToList();
-
-                    if (!validStavke.Any())
-                    {
-                        ModelState.AddModelError("", "Račun mora imati barem jednu valjanu stavku.");
-                        throw new InvalidOperationException("No valid items");
-                    }
-
-                    var postedIds = validStavke
-                        .Where(s => s.StavkaId.HasValue)
-                        .Select(s => s.StavkaId!.Value)
-                        .ToHashSet();
-
-                    var toRemove = narudzba.Stavkanarudzbes
-                        .Where(s => !postedIds.Contains(s.StavkaId))
-                        .ToList();
-
-                    if (toRemove.Count > 0)
-                    {
-                        _context.Stavkanarudzbes.RemoveRange(toRemove);
-                    }
-
-                    foreach (var stavkaVm in validStavke)
-                    {
-                        if (stavkaVm.StavkaId.HasValue)
+                            narudzbaEntity = racunFromDb.Narudzbas.FirstOrDefault(n => n.NarudzbaId == nVm.NarudzbaId.Value)!;
+                            if (narudzbaEntity == null) continue;
+                        }
+                        else
                         {
-                            var existing = narudzba.Stavkanarudzbes.FirstOrDefault(s => s.StavkaId == stavkaVm.StavkaId.Value);
-                            if (existing != null)
-                            {
-                                existing.ProizvodId = stavkaVm.ProizvodId!.Value;
-                                existing.Kolicina = stavkaVm.Kolicina!.Value;
-                                continue;
-                            }
+                            narudzbaEntity = new Narudzba { VrijemeNarudzbe = DateTime.Now, RacunId = racunFromDb.RacunId };
+                            _context.Narudzbas.Add(narudzbaEntity);
                         }
 
-                        _context.Stavkanarudzbes.Add(new Stavkanarudzbe
+                        var validStavke = nVm.Stavke.Where(s => s.ProizvodId.HasValue && s.Kolicina.HasValue && s.Kolicina.Value > 0).ToList();
+                        var postedStavkaIds = validStavke.Where(s => s.StavkaId.HasValue).Select(s => s.StavkaId!.Value).ToHashSet();
+
+                        if (narudzbaEntity.NarudzbaId > 0)
                         {
-                            NarudzbaId = narudzba.NarudzbaId,
-                            ProizvodId = stavkaVm.ProizvodId!.Value,
-                            Kolicina = stavkaVm.Kolicina!.Value
-                        });
+                            var stavkasToRemove = narudzbaEntity.Stavkanarudzbes.Where(s => !postedStavkaIds.Contains(s.StavkaId)).ToList();
+                            _context.Stavkanarudzbes.RemoveRange(stavkasToRemove);
+                        }
+
+                        foreach (var sVm in validStavke)
+                        {
+                            if (sVm.StavkaId.HasValue && sVm.StavkaId.Value > 0)
+                            {
+                                var existing = narudzbaEntity.Stavkanarudzbes.FirstOrDefault(s => s.StavkaId == sVm.StavkaId.Value);
+                                if (existing != null)
+                                {
+                                    existing.ProizvodId = sVm.ProizvodId!.Value;
+                                    existing.Kolicina = sVm.Kolicina!.Value;
+                                }
+                            }
+                            else
+                            {
+                                _context.Stavkanarudzbes.Add(new Stavkanarudzbe
+                                {
+                                    Narudzba = narudzbaEntity,
+                                    ProizvodId = sVm.ProizvodId!.Value,
+                                    Kolicina = sVm.Kolicina!.Value
+                                });
+                            }
+                        }
                     }
 
                     await _context.SaveChangesAsync();
+
+                    var racunTotal = await _context.Narudzbas
+                        .Where(n => n.RacunId == racunFromDb.RacunId)
+                        .SelectMany(n => n.Stavkanarudzbes)
+                        .Include(s => s.Proizvod)
+                        .Select(s => (decimal?)s.Kolicina * s.Proizvod.Cijena)
+                        .SumAsync();
+
+                    racunFromDb.UkupnaCijena = racunTotal ?? 0m;
+                    _context.Racuns.Update(racunFromDb);
+                    await _context.SaveChangesAsync();
+
                     await transaction.CommitAsync();
 
-                    return RedirectToAction(nameof(Index));
+                    return RedirectToAction("Index", "Home");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -341,29 +365,30 @@ namespace SUPK.Controllers
                     {
                         return NotFound();
                     }
-
-                    throw;
-                }
-                catch
-                {
-                    await transaction.RollbackAsync();
+                    else
+                    {
+                        throw;
+                    }
                 }
             }
-            ViewData["KonobarId"] = new SelectList(_context.Konobars, "KonobarId", "KonobarId", vm.Racun.KonobarId);
-            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "StolId", vm.Racun.StolId);
-            ViewData["Proizvodi"] = new SelectList(
-                await _context.Proizvods.ToListAsync(),
-                "ProizvodId",
-                "Naziv");
 
-            ViewData["NacinPlacanja"] = new SelectList(
-                Enum.GetValues(typeof(TipPlacanja))
-                    .Cast<TipPlacanja>()
-                    .Select(e => new { Value = e, Text = e.ToString() }),
-                "Value",
-                "Text",
-                vm.Racun.NacinPlacanja);
+            var proizvodiListDb = await _context.Proizvods
+                .Select(p => new { p.ProizvodId, p.Naziv, Cijena = p.Cijena })
+                .ToListAsync();
+            ViewData["Proizvodi"] = new SelectList(proizvodiListDb, "ProizvodId", "Naziv");
+            ViewBag.ProizvodiJson = JsonSerializer.Serialize(proizvodiListDb);
 
+            ViewData["KonobarId"] = new SelectList(
+                _context.Konobars.Select(k => new
+                {
+                    k.KonobarId,
+                    PunoIme = k.Ime + " " + k.Prezime
+                }),
+                "KonobarId",
+                "PunoIme",
+                vm.Racun.KonobarId);
+
+            ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "BrojStola", vm.Racun.StolId);
             return View(vm);
         }
 
@@ -399,7 +424,7 @@ namespace SUPK.Controllers
             }
 
             await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            return RedirectToAction(nameof(Index), "Home");
         }
 
         private bool RacunExists(int id)

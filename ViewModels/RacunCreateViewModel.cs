@@ -16,7 +16,7 @@ namespace SUPK.ViewModels
         public int? ProizvodId { get; set; }
 
         [Required(ErrorMessage = "Količina je obavezna.")]
-        [Range(1, int.MaxValue, ErrorMessage = "Količina mora biti veća od 0.")]
+        [Range(1, int.MaxValue, ErrorMessage = "Količina mora biti broj veći od 0.")]
         public int? Kolicina { get; set; }
     }
 }

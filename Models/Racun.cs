@@ -6,9 +6,13 @@ public partial class Racun
 {
     public int RacunId { get; set; }
 
+    [Required(ErrorMessage = "Vrijeme otvaranja je obavezno.")]
+    [DataType(DataType.DateTime)]
     public DateTime VrijemeOtvaranja { get; set; }
 
+    [DataType(DataType.DateTime)]
     public DateTime? VrijemeZatvaranja { get; set; }
+    
     public TipPlacanja? NacinPlacanja { get; set; }
 
     public decimal? UkupnaCijena { get; set; }

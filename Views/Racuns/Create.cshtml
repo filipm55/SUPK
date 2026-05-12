@@ -16,12 +16,14 @@
             <h4>Podaci računa</h4>
 
             <div class="mb-3">
-                <label asp-for="Racun.VrijemeOtvaranja" class="form-label"></label>
+                <label asp-for="Racun.VrijemeOtvaranja" class="form-label">Vrijeme otvaranja</label>
                 <input asp-for="Racun.VrijemeOtvaranja"
                        type="datetime-local"
-                       class="form-control" />
+                       class="form-control"
+                       lang="hr-HR" />
                 <span asp-validation-for="Racun.VrijemeOtvaranja"
                       class="text-danger"></span>
+                <small class="form-text text-muted">Format: dd.mm.yyyy HH:mm</small>
             </div>
 
             <div class="mb-3">
@@ -46,16 +48,6 @@
                       class="text-danger"></span>
             </div>
 
-            <div class="mb-3">
-                <label asp-for="Racun.NacinPlacanja" class="form-label">Način plaćanja</label>
-                <select asp-for="Racun.NacinPlacanja"
-                        asp-items="ViewBag.NacinPlacanja"
-                        class="form-select">
-                    <option value="">-- Odaberite način plaćanja --</option>
-                </select>
-                <span asp-validation-for="Racun.NacinPlacanja"
-                      class="text-danger"></span>
-            </div>
             
         </div>
     </div>
@@ -151,7 +143,7 @@
                 $("#stavkeContainer").append(noviRed);
             });
 
-            // Brisanje i osvježavanje stakve
+            // Brisanje i osvježavanje stavke
             $(document).on("click", ".obrisi-stavku", function () {
                 if ($(".stavka-red").length > 1) {
                     $(this).closest("tr").remove();
