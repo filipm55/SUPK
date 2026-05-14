@@ -86,6 +86,21 @@ namespace SUPK.Controllers
             ModelState.Remove("Racun.Stol");
             ModelState.Remove("Racun.Narudzbas");
 
+            if (vm.Racun.VrijemeZatvaranja.HasValue && vm.Racun.VrijemeZatvaranja.Value < vm.Racun.VrijemeOtvaranja)
+            {
+                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Vrijeme zatvaranja ne smije biti prije vremena otvaranja.");
+            }
+
+            if (vm.Racun.NacinPlacanja.HasValue && !vm.Racun.VrijemeZatvaranja.HasValue)
+            {
+                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Ako je odabran način plaćanja, morate upisati i vrijeme zatvaranja.");
+            }
+
+            if (vm.Racun.VrijemeZatvaranja.HasValue && !vm.Racun.NacinPlacanja.HasValue)
+            {
+                ModelState.AddModelError("Racun.NacinPlacanja", "Ako je upisano vrijeme zatvaranja, morate odabrati način plaćanja.");
+            }
+
             if (!ModelState.IsValid)
             {
                 await LoadDropdowns();
@@ -109,6 +124,29 @@ namespace SUPK.Controllers
                 ModelState.AddModelError("", "Račun mora imati barem jednu valjanu stavku.");
                 await LoadDropdowns();
                 return View(vm);
+            }
+
+            if (vm.Stavke
+                .Where(s => s.ProizvodId.HasValue)
+                .GroupBy(s => s.ProizvodId!.Value)
+                .Any(g => g.Count() > 1))
+            {
+                ModelState.AddModelError("", "Nije dozvoljeno dodati isti proizvod više puta u stavkama. Povećajte količinu umjesto duplikata.");
+                await LoadDropdowns();
+                return View(vm);
+            }
+
+            if (vm.Racun.StolId.HasValue)
+            {
+                var stolImaOtvorenRacun = await _context.Racuns
+                    .AnyAsync(r => r.StolId == vm.Racun.StolId && !r.VrijemeZatvaranja.HasValue);
+
+                if (stolImaOtvorenRacun)
+                {
+                    ModelState.AddModelError("Racun.StolId", "Odabrani stol već ima otvoren račun.");
+                    await LoadDropdowns();
+                    return View(vm);
+                }
             }
 
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -265,6 +303,11 @@ namespace SUPK.Controllers
             ModelState.Remove("Racun.Stol");
             ModelState.Remove("Racun.Narudzbas");
 
+            if (vm.Racun.VrijemeZatvaranja.HasValue && vm.Racun.VrijemeZatvaranja.Value < vm.Racun.VrijemeOtvaranja)
+            {
+                ModelState.AddModelError("Racun.VrijemeZatvaranja", "Vrijeme zatvaranja ne smije biti prije vremena otvaranja.");
+            }
+
             if (vm.Racun.VrijemeZatvaranja.HasValue && !vm.Racun.NacinPlacanja.HasValue)
             {
                 ModelState.AddModelError("Racun.NacinPlacanja", "Račun mora sadržavati način plaćanja.");
@@ -276,6 +319,34 @@ namespace SUPK.Controllers
             }
 
             vm.Narudzbe ??= new();
+
+            // ne dopusti duple proizvode unutar iste narudžbe
+            for (var i = 0; i < vm.Narudzbe.Count; i++)
+            {
+                var dup = (vm.Narudzbe[i].Stavke ?? new List<StavkaEditViewModel>())
+                    .Where(s => s.ProizvodId.HasValue && s.Kolicina.HasValue && s.Kolicina.Value > 0)
+                    .GroupBy(s => s.ProizvodId!.Value)
+                    .Any(g => g.Count() > 1);
+
+                if (dup)
+                {
+                    ModelState.AddModelError("", $"U narudžbi #{i + 1} nije dozvoljeno dodati isti proizvod više puta. Povećajte količinu umjesto duplikata.");
+                }
+            }
+
+            // stol ne smije imati drugi otvoreni račun
+            if (vm.Racun.StolId.HasValue)
+            {
+                var stolImaOtvorenRacun = await _context.Racuns.AnyAsync(r =>
+                    r.StolId == vm.Racun.StolId &&
+                    !r.VrijemeZatvaranja.HasValue &&
+                    r.RacunId != vm.Racun.RacunId);
+
+                if (stolImaOtvorenRacun)
+                {
+                    ModelState.AddModelError("Racun.StolId", "Odabrani stol već ima otvoren račun.");
+                }
+            }
 
             if (ModelState.IsValid)
             {
@@ -389,6 +460,14 @@ namespace SUPK.Controllers
                 vm.Racun.KonobarId);
 
             ViewData["StolId"] = new SelectList(_context.Stols, "StolId", "BrojStola", vm.Racun.StolId);
+
+            ViewData["NacinPlacanja"] = new SelectList(
+                Enum.GetValues(typeof(TipPlacanja))
+                    .Cast<TipPlacanja>()
+                    .Select(e => new { Value = e, Text = e.ToString() }),
+                "Value",
+                "Text",
+                vm.Racun.NacinPlacanja);
             return View(vm);
         }
 

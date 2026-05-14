@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="../SUPK.Tests/SUPK.Tests.csproj" Id="63f0e030-b986-4e89-8c8f-0729f497ff49" />
   <Project Path="SUPK.csproj" />
 </Solution>
