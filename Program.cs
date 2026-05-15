@@ -2,11 +2,14 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using SUPK.Models;
+using SUPK.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddAuthorization();
+
+builder.Services.AddScoped<IRacunService, RacunService>();
 
 // Dodaj lokalizaciju za hrvatski jezik
 var supportedCultures = new[] { new CultureInfo("hr-HR") };
