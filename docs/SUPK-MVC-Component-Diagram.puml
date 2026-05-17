@@ -1,0 +1,118 @@
+@startuml SUPK_Component_Diagram
+left to right direction
+title SUPK - Dijagram komponenti u MVC arhitekturi na .NET platformi
+
+skinparam componentStyle uml2
+skinparam linetype ortho
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+actor User
+actor Admin
+
+() "HTTP" as HTTP #LightBlue
+
+package "Controllers <<class>>" as CTRL #LightYellow {
+    component [HomeController] as HC
+    component [ProizvodController] as PC
+    component [RacunController] as RC
+    component [StolController] as SC
+    component [KonobarController] as KC
+    component [PrometController] as PrC
+}
+
+package "Business Logic" as BL #LightSteelBlue {
+    interface "IRacunService" as ISVC_Racun
+    component "RacunService" as SVC_Racun
+}
+
+package "Data Access" as DA #LightCyan {
+    interface "EF Core DbContext API" as I_DbContext
+    component "CaffeBarDbContext" as DAL_Ctx
+}
+
+package "Models <<class>>" as MODELS #LightYellow {
+    component "Racun" as M_Racun
+    component "Narudzba" as M_Narudzba
+    component "StavkaNarudzbe" as M_Stavka
+    component "Proizvod" as M_Proizvod
+    component "Konobar" as M_Konobar
+    component "Stol" as M_Stol
+    component "PozivKonobara" as M_Poziv
+
+    package "Enums <<enumeration>>" {
+         component "TipPlacanja" as E_Tip
+         component "StolStatus" as E_StolStatus
+         component "StatusPoziva" as E_StatPoziva
+         component "TipPoziva" as E_TipPoziva
+    }
+}
+
+package "Views <<class>>" as VIEWS #LightYellow {
+    component "Home\n(Cjelokupni pregled, PozivKonobara)" as V_Home
+    component "Racun\n(Index, Create, Edit, Details, Delete)" as V_Racun
+    component "Proizvod\n(Index, Create, Edit, Details, Delete)" as V_Proizvod
+    component "Stol\n(Index, Create, Edit, Details, Delete)" as V_Stol
+    component "Konobar\n(Index, Create, Edit, Details, Delete)" as V_Konobar
+    component "Promet\n(Index, Details)" as V_Promet
+    component "Shared\n(_Layout, _ViewStart)" as V_Shared
+
+    package "ViewModels" as VMODELS {
+        component "RacunCreateViewModel" as VM_RacunCreate
+        component "RacunEditViewModel" as VM_RacunEdit
+        component "StavkaCreateViewModel" as VM_Stavka
+        component "StavkaEditViewModel" as VM_StavkaEdit
+        component "NarudzbaEditViewModel" as VM_NarudzbaEdit
+        component "KonobarEditViewModel" as VM_KonobarEdit
+        component "StolEditViewModel" as VM_StolEdit
+        component "PrometViewModel" as VM_Promet
+    }
+}
+
+database "PostgreSQL" as DB
+component "Program.cs" as Program
+
+User --> HTTP : HTTP request
+Admin --> HTTP : HTTP request
+HTTP --> CTRL
+
+CTRL ..> VIEWS : vraća prikaz
+CTRL ..> VMODELS : koristi
+
+V_Home ..> V_Shared : uključuje
+V_Racun ..> V_Shared : uključuje
+V_Proizvod ..> V_Shared : uključuje
+V_Stol ..> V_Shared : uključuje
+V_Konobar ..> V_Shared : uključuje
+V_Promet ..> V_Shared : uključuje
+
+VMODELS ..> MODELS : agregacija podataka
+
+CTRL ..> I_DbContext : CRUD
+RC ..> ISVC_Racun : DI
+
+ISVC_Racun <|.. SVC_Racun : implementira
+SVC_Racun ..> I_DbContext : transakcije
+SVC_Racun ..> MODELS : kreira/uređuje
+
+I_DbContext - DAL_Ctx
+DAL_Ctx *-- MODELS : Db Set
+
+M_Racun ..> E_Tip : koristi
+M_Stol ..> E_StolStatus : koristi
+M_Poziv ..> E_StatPoziva : koristi
+M_Poziv ..> E_TipPoziva : koristi
+
+DAL_Ctx --> DB : Npgsql Entity Framework Core Provider
+
+Program ..> CTRL : rute
+Program ..> ISVC_Racun : DI
+Program ..> I_DbContext : DI
+Program ..> V_Shared : index/home
+Program ..> DB : postavke za konekciju
+
+note bottom of Program
+DI - Dependancy Injection
+end note
+
+@enduml
